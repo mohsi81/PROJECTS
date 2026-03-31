@@ -94,16 +94,16 @@ button {
 
     <input type="number" id="pre" placeholder="Previous Reading">
     <input type="number" id="current" placeholder="Current Reading">
-    <input type="number" id="gcv" placeholder="GCV">
-    <input type="number" id="pressure" placeholder="Gas Pressure">
+    <input type="number" id="gcv" placeholder="GCV (eg: 1047)">
+    <input type="number" id="pressure" placeholder="Gas Pressure (eg: 1.0416)">
 
     <button onclick="calculateBill()">Calculate Bill</button>
 
     <div id="result"></div>
 </div>
 
-<script>
-function calculateBill() {
+<script>function calculateBill() {
+
     let pre = parseFloat(document.getElementById("pre").value);
     let current = parseFloat(document.getElementById("current").value);
     let gcv = parseFloat(document.getElementById("gcv").value);
@@ -114,39 +114,147 @@ function calculateBill() {
         return;
     }
 
+    // -------- Helper Functions (same as Python) --------
+
+    function cal_slab_mmbtu(p_slab, hm3) {
+        let c_slab = hm3 - p_slab;
+        return [c_slab, p_slab];
+    }
+
+    function total_bill(bill, f_charges) {
+        let rent = 41.33;
+        let gst = (bill + rent + f_charges) * 0.18;
+
+        return {
+            rent: rent,
+            gst: gst,
+            total: bill + gst + rent + f_charges
+        };
+    }
+
+    function slab(p_slab, c_slab, gcv, p_fee, c_fee) {
+        let p_mmbtu = ((p_slab * gcv) / 281.7385);
+        let c_mmbtu = ((c_slab * gcv) / 281.7385);
+        let cost1 = p_mmbtu * p_fee;
+        let cost2 = c_mmbtu * c_fee;
+        return cost1 + cost2;
+    }
+
+    // -------- Core Calculations --------
+
     let units = current - pre;
     let c_unit = units * pressure;
     let hm3 = c_unit / 100;
-    let mmbtu = (hm3 * gcv) / 281.7385;
 
     let bill = 0;
     let fixed = 1500;
 
-    function slab(p, h, r1, r2) {
-        return (p * r1) + ((h - p) * r2);
+    if (hm3 <= 0.25) {
+        let mmbtu = (hm3 * gcv) / 281.7385;
+        bill = mmbtu * 500;
+
+        let res = total_bill(bill, 1500);
+
+        showResult(hm3, bill, res.rent, 1500, res.gst, res.total);
     }
 
-    if (hm3 <= 0.25) bill = mmbtu * 500;
-    else if (hm3 <= 0.60) bill = slab(0.60, hm3, 500, 850);
-    else if (hm3 <= 1) bill = slab(0.60, hm3, 850, 1250);
-    else if (hm3 <= 1.5) bill = slab(1, hm3, 1250, 1450);
-    else if (hm3 <= 2.0) { bill = slab(1.5, hm3, 1450, 1900); fixed = 3000; }
-    else if (hm3 <= 3) { bill = slab(2.0, hm3, 1900, 3300); fixed = 3000; }
-    else { bill = (3 * 3300) + ((hm3 - 3) * 4500); fixed = 3000; }
+    else if (hm3 > 0.25 && hm3 <= 0.60) {
+        let [c_slab, p_slab] = cal_slab_mmbtu(0.60, hm3);
 
-    let rent = 41.33;
-    let gst = (bill + rent + fixed) * 0.18;
-    let total = bill + gst + rent + fixed;
+        let cost1 = p_slab * 500;
+        let cost2 = c_slab * 850;
 
-    document.getElementById("result").innerHTML = `
-        📊 HM3: ${hm3.toFixed(3)}<br>
-        🔥 Gas: ${bill.toFixed(2)}<br>
-        🏠 Rent: ${rent}<br>
-        ⚙️ Fixed: ${fixed}<br>
-        💰 GST: ${gst.toFixed(2)}<br>
-        <hr>
-        ✅ Total: ${total.toFixed(2)}
-    `;
+        bill = cost1 + cost2;
+
+        let res = total_bill(bill, 1500);
+
+        showResult(hm3, bill, res.rent, 1500, res.gst, res.total);
+    }
+
+    else if (hm3 > 0.60 && hm3 <= 1) {
+        let [c_slab, p_slab] = cal_slab_mmbtu(0.60, hm3);
+
+        let cost1 = p_slab * 850;
+        let cost2 = c_slab * 1250;
+
+        bill = cost1 + cost2;
+
+        let res = total_bill(bill, 1500);
+
+        showResult(hm3, bill, res.rent, 1500, res.gst, res.total);
+    }
+
+    else if (hm3 > 1 && hm3 <= 1.5) {
+        let [c_slab, p_slab] = cal_slab_mmbtu(1, hm3);
+
+        let p_mmbtu = ((p_slab * gcv) / 281.7385);
+        let c_mmbtu = ((c_slab * gcv) / 281.7385);
+
+        let cost1 = p_mmbtu * 1250;
+        let cost2 = c_mmbtu * 1450;
+
+        bill = cost1 + cost2;
+
+        let res = total_bill(bill, 1500);
+
+        showResult(hm3, bill, res.rent, 1500, res.gst, res.total);
+    }
+
+    else if (hm3 > 1.5 && hm3 <= 2.0) {
+        let [c_slab, p_slab] = cal_slab_mmbtu(1.5, hm3);
+
+        let p_mmbtu = ((p_slab * gcv) / 281.7385);
+        let c_mmbtu = ((c_slab * gcv) / 281.7385);
+
+        let cost1 = p_mmbtu * 1450;
+        let cost2 = c_mmbtu * 1900;
+
+        bill = cost1 + cost2;
+
+        let res = total_bill(bill, 3000);
+
+        showResult(hm3, bill, res.rent, 3000, res.gst, res.total);
+    }
+
+    else if (hm3 > 2.0 && hm3 <= 3) {
+        let [c_slab, p_slab] = cal_slab_mmbtu(2.0, hm3);
+
+        let p_mmbtu = ((p_slab * gcv) / 281.7385);
+        let c_mmbtu = ((c_slab * gcv) / 281.7385);
+
+        let cost1 = p_mmbtu * 1900;
+        let cost2 = c_mmbtu * 3300;
+
+        bill = cost1 + cost2;
+
+        let res = total_bill(bill, 3000);
+
+        showResult(hm3, bill, res.rent, 3000, res.gst, res.total);
+    }
+
+    else if (hm3 > 3 && hm3 <= 4) {
+        let [c_slab, p_slab] = cal_slab_mmbtu(3.0, hm3);
+
+        bill = slab(p_slab, c_slab, gcv, 3300, 4500);
+
+        let res = total_bill(bill, 3000);
+
+        showResult(hm3, bill, res.rent, 3000, res.gst, res.total);
+    }
+
+    // -------- Display --------
+
+    function showResult(hm3, bill, rent, fixed, gst, total) {
+        document.getElementById("result").innerHTML = `
+            📊 HM3: ${hm3.toFixed(6)}<br>
+            🔥 Gas Price: ${bill.toFixed(2)}<br>
+            🏠 Meter Rent: ${rent}<br>
+            ⚙️ Fixed Charges: ${fixed}<br>
+            💰 GST: ${gst.toFixed(2)}<br>
+            <hr>
+            ✅ Total Bill: ${total.toFixed(2)}
+        `;
+    }
 }
 </script>
 
