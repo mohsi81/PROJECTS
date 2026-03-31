@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gas Bill Calculator</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #1d2671, #c33764);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+    color: white;
+}
+.home-btn {
+    display: inline-block;
+    margin-bottom: 15px;
+    padding: 8px 15px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.home-btn:hover {
+    background: rgba(255,255,255,0.35);
+}
+.container {
+    width: 100%;
+    max-width: 360px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px);
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+h1 {
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #ff7a18;
+    color: white;
+    font-size: 16px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+#result {
+    margin-top: 15px;
+    font-size: 14px;
+    text-align: left;
+}
+
+/* Mobile tweak */
+@media (max-width: 400px) {
+    h1 { font-size: 20px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <a href="./index.html" class="home-btn">🏠 Home</a>
+    <h1>🔥 Gas Bill Calculator</h1>
+
+    <input type="number" id="pre" placeholder="Previous Reading">
+    <input type="number" id="current" placeholder="Current Reading">
+    <input type="number" id="gcv" placeholder="GCV">
+    <input type="number" id="pressure" placeholder="Gas Pressure">
+
+    <button onclick="calculateBill()">Calculate Bill</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+function calculateBill() {
+    let pre = parseFloat(document.getElementById("pre").value);
+    let current = parseFloat(document.getElementById("current").value);
+    let gcv = parseFloat(document.getElementById("gcv").value);
+    let pressure = parseFloat(document.getElementById("pressure").value);
+
+    if (!pre || !current || !gcv || !pressure) {
+        document.getElementById("result").innerHTML = "Fill all fields!";
+        return;
+    }
+
+    let units = current - pre;
+    let c_unit = units * pressure;
+    let hm3 = c_unit / 100;
+    let mmbtu = (hm3 * gcv) / 281.7385;
+
+    let bill = 0;
+    let fixed = 1500;
+
+    function slab(p, h, r1, r2) {
+        return (p * r1) + ((h - p) * r2);
+    }
+
+    if (hm3 <= 0.25) bill = mmbtu * 500;
+    else if (hm3 <= 0.60) bill = slab(0.60, hm3, 500, 850);
+    else if (hm3 <= 1) bill = slab(0.60, hm3, 850, 1250);
+    else if (hm3 <= 1.5) bill = slab(1, hm3, 1250, 1450);
+    else if (hm3 <= 2.0) { bill = slab(1.5, hm3, 1450, 1900); fixed = 3000; }
+    else if (hm3 <= 3) { bill = slab(2.0, hm3, 1900, 3300); fixed = 3000; }
+    else { bill = (3 * 3300) + ((hm3 - 3) * 4500); fixed = 3000; }
+
+    let rent = 41.33;
+    let gst = (bill + rent + fixed) * 0.18;
+    let total = bill + gst + rent + fixed;
+
+    document.getElementById("result").innerHTML = `
+        📊 HM3: ${hm3.toFixed(3)}<br>
+        🔥 Gas: ${bill.toFixed(2)}<br>
+        🏠 Rent: ${rent}<br>
+        ⚙️ Fixed: ${fixed}<br>
+        💰 GST: ${gst.toFixed(2)}<br>
+        <hr>
+        ✅ Total: ${total.toFixed(2)}
+    `;
+}
+</script>
+
+</body>
+</html>
