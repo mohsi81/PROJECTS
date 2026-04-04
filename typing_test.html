@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProType | Minimalist Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --text-main: #111827;
+            --text-dim: #6b7280;
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --box-bg: rgba(243, 244, 246, 0.8);
+            --overlay-bg: rgba(255, 255, 255, 0.3);
+            --error: #e11d48;
+            --success: #16a34a;
+            --strike: #ea580c;
+        }
+
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+            background-image: url('./images2.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--overlay-bg);
+            z-index: -1;
+        }
+
+        .hidden { display: none !important; }
+
+        .card {
+            background: var(--card-bg); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+            margin: auto;
+        }
+
+        @media (min-width: 768px) {
+            .card { padding: 3.5rem; border-radius: 32px; }
+        }
+
+        h1 { 
+            font-size: clamp(2rem, 8vw, 3.5rem); 
+            margin: 0; 
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #1f2937 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle { 
+            color: var(--text-dim); 
+            margin-bottom: 2rem; 
+            font-weight: 300;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+        }
+
+        .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 2rem 0; }
+        @media (max-width: 480px) { .mode-grid { grid-template-columns: 1fr; } }
+
+        .mode-card {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .mode-card:hover { border-color: var(--primary); background: rgba(79, 70, 229, 0.05); }
+        .mode-card.active { border-color: var(--primary); background: rgba(79, 70, 229, 0.1); }
+        .mode-card span { display: block; font-size: 1.3rem; font-weight: 800; color: var(--primary); }
+        .mode-card small { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; }
+
+        #quote-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(1rem, 3.5vw, 1.4rem);
+            line-height: 1.7;
+            text-align: left;
+            margin: 1.5rem 0;
+            height: 220px;
+            overflow: hidden;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            color: #b1b5be;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .char-correct { color: var(--text-main); font-weight: 500; }
+        .char-incorrect { color: var(--error); border-bottom: 2px solid var(--error); }
+        
+        .char-current { position: relative; color: var(--primary); }
+        .char-current::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: -2px;
+            width: 100%; height: 3px;
+            background-color: var(--primary);
+            box-shadow: 0 0 8px rgba(79, 70, 229, 0.4);
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+        .char-locked::after { background-color: var(--error); box-shadow: 0 0 10px rgba(225, 29, 72, 0.5); }
+
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+        @media (max-width: 600px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+
+        .stat-box { 
+            background: var(--box-bg); 
+            padding: 0.8rem; 
+            border-radius: 12px; 
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .stat-box label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; font-weight: 800; display: block; }
+        .stat-box div { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+
+        textarea { position: absolute; opacity: 0; pointer-events: none; }
+
+        .btn-main {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+            text-transform: uppercase;
+            width: 100%;
+        }
+        @media (min-width: 480px) { .btn-main { width: auto; } }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3); }
+
+        .btn-back {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-dim);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        #results-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center; z-index: 100;
+            background: rgba(0,0,0,0.85);
+            padding: 20px;
+        }
+
+        .result-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .result-item label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .result-item span {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="home-page" class="card">
+        <h1>ProType</h1>
+        <p class="subtitle">Quickly check your typing speed.</p>
+        <div class="mode-grid">
+            <div class="mode-card" onclick="setTimer(60, this)"><span>1:00</span><small>Sprint</small></div>
+            <div class="mode-card active" onclick="setTimer(120, this)"><span>2:00</span><small>Standard</small></div>
+            <div class="mode-card" onclick="setTimer(180, this)"><span>3:00</span><small>Endurance</small></div>
+        </div>
+        <button class="btn-main" onclick="initGame()">Start Challenge</button>
+    </div>
+
+    <div id="test-page" class="card hidden">
+        <div class="stats-bar">
+            <div class="stat-box"><label>Timer</label><div id="timer">--</div></div>
+            <div class="stat-box"><label>WPM</label><div id="wpm">0</div></div>
+            <div class="stat-box"><label>Acc%</label><div id="accuracy">100%</div></div>
+            <div class="stat-box"><label>Status</label><div id="lock-status" style="color: var(--success);">Online</div></div>
+        </div>
+        <div id="quote-display"></div>
+        <textarea id="hidden-input" spellcheck="false" autocomplete="off"></textarea>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <p style="color: var(--text-dim); font-size: 0.75rem; margin: 0;">Errors trigger the strike alert.</p>
+            <button class="btn-back" onclick="location.reload()">Reset Arena</button>
+        </div>
+    </div>
+
+    <div id="results-screen" class="hidden">
+        <div class="card" style="max-width: 500px;">
+            <div style="font-size: 4rem;" id="rank-emoji">🐢</div>
+            <p id="rank-text" style="text-transform: uppercase; letter-spacing: 3px; font-weight: 800; color: var(--text-dim); margin-bottom: 1rem;">Beginner</p>
+            
+            <div class="result-stats">
+                <div class="result-item">
+                    <label>WPM</label>
+                    <span id="res-wpm">0</span>
+                </div>
+                <div class="result-item">
+                    <label>Accuracy</label>
+                    <span id="res-acc">0%</span>
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="location.reload()">New Trial</button>
+        </div>
+    </div>
+
+    <audio id="audio-click" src="audio.mp3" preload="auto"></audio>
+
+<script>
+    const quoteDisplay = document.getElementById('quote-display');
+    const hiddenInput = document.getElementById('hidden-input');
+    const audioClick = document.getElementById('audio-click');
+
+    let duration = 120, timeLeft = 0, timer = null, started = false;
+    let currentIndex = 0, lastWasWrong = false, correctCount = 0, totalTypedCount = 0;
+
+    const paragraphs = [
+        "The rapid evolution of artificial intelligence has transformed how we approach complex computational problems. By utilizing deep learning algorithms and vast neural networks, systems can now recognize patterns and make decisions with unprecedented accuracy. This technological leap requires developers to maintain a strong foundation.",
+        "Effective project management is the cornerstone of any successful software development lifecycle. It involves meticulous planning, clear communication, and the agile adaptation to changing requirements. Teams that prioritize collaborative environments and robust version control systems consistently deliver high-quality applications.",
+        "Cybersecurity is no longer an afterthought but a fundamental aspect of global digital infrastructure. As networks expand and personal data becomes increasingly valuable, protecting sensitive information from unauthorized access is paramount. Implementing rigorous encryption protocols is an essential practice for modern tech professionals."
+    ];
+
+    function setTimer(s, el) {
+        duration = s;
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function initGame() {
+        document.getElementById('home-page').classList.add('hidden');
+        document.getElementById('test-page').classList.remove('hidden');
+        timeLeft = duration;
+        document.getElementById('timer').innerText = timeLeft + "s";
+        
+        let selectedText = paragraphs[Math.floor(Math.random() * paragraphs.length)];
+        quoteDisplay.innerHTML = '';
+        selectedText.split('').forEach(char => {
+            const span = document.createElement('span');
+            span.innerText = char;
+            quoteDisplay.appendChild(span);
+        });
+
+        updateCursor();
+        hiddenInput.focus();
+        document.body.addEventListener('touchstart', () => hiddenInput.focus());
+    }
+
+    hiddenInput.addEventListener('input', (e) => {
+        if (!started) { startTimer(); started = true; }
+        const spans = quoteDisplay.querySelectorAll('span');
+        const typedValue = hiddenInput.value;
+        const lastChar = typedValue[typedValue.length - 1];
+        const target = spans[currentIndex].innerText;
+
+        const click = audioClick.cloneNode();
+        click.volume = 0.4; click.play();
+
+        totalTypedCount++;
+
+        if (lastChar === target) {
+            spans[currentIndex].className = 'char-correct';
+            currentIndex++;
+            lastWasWrong = false;
+            correctCount++;
+            document.getElementById('lock-status').innerText = "Online";
+            document.getElementById('lock-status').style.color = "var(--success)";
+        } else {
+            if (lastWasWrong) {
+                document.getElementById('lock-status').innerText = "LOCKED";
+                document.getElementById('lock-status').style.color = "var(--error)";
+                spans[currentIndex].classList.add('char-locked');
+                hiddenInput.value = typedValue.slice(0, -1);
+                totalTypedCount--; 
+            } else {
+                spans[currentIndex].className = 'char-incorrect';
+                currentIndex++;
+                lastWasWrong = true;
+                document.getElementById('lock-status').innerText = "Strike 1";
+                document.getElementById('lock-status').style.color = "#ea580c";
+            }
+        }
+
+        const accuracy = Math.round((correctCount / totalTypedCount) * 100) || 100;
+        document.getElementById('accuracy').innerText = accuracy + "%";
+
+        updateCursor();
+        const current = spans[currentIndex];
+        if (current) current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (currentIndex >= spans.length) endGame();
+    });
+
+    function updateCursor() {
+        const spans = quoteDisplay.querySelectorAll('span');
+        spans.forEach(s => { s.classList.remove('char-current', 'char-locked'); });
+        if (currentIndex < spans.length) {
+            spans[currentIndex].classList.add('char-current');
+            if (lastWasWrong) spans[currentIndex].classList.add('char-locked');
+        }
+    }
+
+    function startTimer() {
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            const elapsed = duration - timeLeft;
+            const wpm = Math.round((currentIndex / 5) / (elapsed / 60)) || 0;
+            document.getElementById('wpm').innerText = wpm;
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+    }
+
+    function endGame() {
+        clearInterval(timer);
+        document.getElementById('test-page').classList.add('hidden');
+        document.getElementById('results-screen').classList.remove('hidden');
+        
+        const finalWpm = parseInt(document.getElementById('wpm').innerText);
+        const finalAcc = document.getElementById('accuracy').innerText;
+        
+        document.getElementById('res-wpm').innerText = finalWpm;
+        document.getElementById('res-acc').innerText = finalAcc;
+        
+        let rank = { name: "Beginner", emoji: "🐢" };
+        if (finalWpm > 30) rank = { name: "Intermediate", emoji: "🐇" };
+        if (finalWpm > 55) rank = { name: "Pro", emoji: "🐆" };
+        if (finalWpm > 85) rank = { name: "Legend", emoji: "⚡" };
+        
+        document.getElementById('rank-text').innerText = rank.name;
+        document.getElementById('rank-emoji').innerText = rank.emoji;
+    }
+</script>
+</body>
+</html>
